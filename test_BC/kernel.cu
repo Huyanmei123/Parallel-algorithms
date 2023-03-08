@@ -10,7 +10,7 @@
 #include <time.h>
 #include <iomanip>
 #include <sstream>
-#include <device_launch_parameters.h>  //°üº¬blockIdx,threadIdx,gridDim
+#include <device_launch_parameters.h>  //åŒ…å«blockIdx,threadIdx,gridDim
 #include "device_functions.h"
 using namespace std;
 
@@ -21,10 +21,10 @@ struct check {
 };
 #define THREAD_COUNT 1024 
 
-//ÎÒ×Ô¼ºµÄÏÔ¿¨µÄÏÔ´æ2G,ÕâÀïÏÈÔİÊ±ÉèÖÃ2G
+//æˆ‘è‡ªå·±çš„æ˜¾å¡çš„æ˜¾å­˜2G,è¿™é‡Œå…ˆæš‚æ—¶è®¾ç½®2G
 #define MAX_MEMORY ((long long)12e9)
 
-//´òÓ¡»ñÈ¡GPUÉè±¸»ù±¾ĞÅÏ¢
+//æ‰“å°è·å–GPUè®¾å¤‡åŸºæœ¬ä¿¡æ¯
 void printDeviceProp(const cudaDeviceProp &prop)
 {
 	printf("Device Name : %s.\n", prop.name);
@@ -44,12 +44,12 @@ void printDeviceProp(const cudaDeviceProp &prop)
 	printf("multiProcessorCount : %d.\n", prop.multiProcessorCount);
 }
 
-//³õÊ¼»¯CUDA
+//åˆå§‹åŒ–CUDA
 bool InitCUDA()
 {
 	int count;
 
-	//È¡µÃÖ§³ÖCudaµÄ×°ÖÃµÄÊıÄ¿
+	//å–å¾—æ”¯æŒCudaçš„è£…ç½®çš„æ•°ç›®
 	cudaGetDeviceCount(&count);
 
 	if (count == 0) {
@@ -62,7 +62,7 @@ bool InitCUDA()
 	for (i = 0; i < count; i++) {
 		cudaDeviceProp prop;
 		cudaGetDeviceProperties(&prop, i);
-		//´òÓ¡Éè±¸ĞÅÏ¢
+		//æ‰“å°è®¾å¤‡ä¿¡æ¯
 		printDeviceProp(prop);
 		if (cudaGetDeviceProperties(&prop, i) == cudaSuccess) {
 			if (prop.major >= 1) {
@@ -82,11 +82,11 @@ bool InitCUDA()
 }
 
 /*
-ÏÈ¶ÁÈ¡³ÉÁÚ½Ó±í
-ÔÙ×ª»»³ÉSCR´æ´¢½á¹¹´æ´¢ÍøÂç
-row_ptr:½Úµã±í
-col_ind:½ÚµãÁÚ½Ó±í
-Ö±½Ó¶ÁÈ¡µ½GPUµÄhostÏÔ´æÉÏ
+å…ˆè¯»å–æˆé‚»æ¥è¡¨
+å†è½¬æ¢æˆSCRå­˜å‚¨ç»“æ„å­˜å‚¨ç½‘ç»œ
+row_ptr:èŠ‚ç‚¹è¡¨
+col_ind:èŠ‚ç‚¹é‚»æ¥è¡¨
+ç›´æ¥è¯»å–åˆ°GPUçš„hostæ˜¾å­˜ä¸Š
 */
 void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes, int &num_edges, bool zero_based = false)
 {
@@ -94,7 +94,7 @@ void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes,
 	if (input.fail())
 		throw "No file is found in the current path!";
 
-	// ¶ÁÍøÂç£¬ÕâÀïscrÄ£Ê½ÏÂÓĞÌØÊâ×Ö·û£¬ÏÈ´¦Àíµô
+	// è¯»ç½‘ç»œï¼Œè¿™é‡Œscræ¨¡å¼ä¸‹æœ‰ç‰¹æ®Šå­—ç¬¦ï¼Œå…ˆå¤„ç†æ‰
 	std::string line = "%";
 	while (line.find("%") != std::string::npos)
 	{
@@ -106,7 +106,7 @@ void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes,
 	int edge_cnt = 0;
 	int v1, v2;
 	//struct check *c=new check[num_edges];
-	//ÁÚ½Ó±í
+	//é‚»æ¥è¡¨
 	std::vector< std::vector<int> > adj_list(num_nodes);
 	for (int i = 0; i < num_edges; i++)
 	{
@@ -126,13 +126,13 @@ void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes,
 	num_edges = edge_cnt;
 
 
-	//gpu hostÖĞÉêÇëÄÚ´æ
-	//+1ÊÇÒòÎªÒ»¿ªÊ¼ºóÃæÒªµ¹×ÅÏà¼õËãdegree
+	//gpu hostä¸­ç”³è¯·å†…å­˜
+	//+1æ˜¯å› ä¸ºä¸€å¼€å§‹åé¢è¦å€’ç€ç›¸å‡ç®—degree
 	cudaMallocHost((void **)&row_ptr, sizeof(int) * (num_nodes + 1));
 	cudaMallocHost((void **)&col_ind, sizeof(int) * (2 * num_edges));
 
-	//ÁÚ½Ó±í×ªSCR½á¹¹
-	row_ptr[0] = 0;  //µÚÒ»¸ñÎª0
+	//é‚»æ¥è¡¨è½¬SCRç»“æ„
+	row_ptr[0] = 0;  //ç¬¬ä¸€æ ¼ä¸º0
 	int index = 0;
 	for (int v = 0; v < num_nodes; v++)
 	{
@@ -144,7 +144,7 @@ void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes,
 		}
 	}
 
-	//»¹ĞèÒªÀÛ¼ÓÒ»ÏÂ²ÅµÃµ½×îÖÕµÄrow_ptr
+	//è¿˜éœ€è¦ç´¯åŠ ä¸€ä¸‹æ‰å¾—åˆ°æœ€ç»ˆçš„row_ptr
 	for (int v = 1; v < num_nodes + 1; v++)
 	{ // cumulative sum
 		row_ptr[v] += row_ptr[v - 1];
@@ -154,7 +154,7 @@ void read_graph(std::string fname, int *&row_ptr, int *&col_ind, int &num_nodes,
 
 __global__
 void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, int *rp, int *ci, int n) {//rp:row_ptr ci:cow_idx
-	//¹²ÏíÄÚ´æ±äÁ¿
+	//å…±äº«å†…å­˜å˜é‡
 	__shared__ int level;
 	__shared__ int visited;
 	__shared__ double dist_sum;
@@ -162,23 +162,23 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 	for (int s = blockIdx.x; s < n; s += gridDim.x) {
 
 		if (threadIdx.x == 0) {
-			//results[s] = rp[s + 1] - rp[s]; // ¼ÆËã¶ÈÖĞĞÄĞÔ degree 1 
+			//results[s] = rp[s + 1] - rp[s]; // è®¡ç®—åº¦ä¸­å¿ƒæ€§ degree 1 
 			level = 0;
 			dist_sum = 0.000;
 			visited = 1;
 		//	dist_sum_2 = 0.0;
 			dist[blockIdx.x * n + s] = 0;
-			sigma[blockIdx.x * n + s] = 1; //sigmaĞèÒªÌáÇ°¸³ÖµÎª1
+			sigma[blockIdx.x * n + s] = 1; //sigmaéœ€è¦æå‰èµ‹å€¼ä¸º1
 		}
 
 		__syncthreads();
 
-		// BFS£¬ÏÈ¿íËÑÑ°ÕÒdist
+		// BFSï¼Œå…ˆå®½æœå¯»æ‰¾dist
 		while (visited == 1) {
 			if (threadIdx.x == 0) visited = 0;
 			for (int node = threadIdx.x; node < n; node += blockDim.x) {
-				for (int edge = rp[node]; edge < rp[node + 1]; edge++) { //Ïàµ±ÓÚ±éÀúcd_idx
-					int &adj = ci[edge]; //È¡±ğÃû
+				for (int edge = rp[node]; edge < rp[node + 1]; edge++) { //ç›¸å½“äºéå†cd_idx
+					int &adj = ci[edge]; //å–åˆ«å
 
 					if (dist[(blockIdx.x * n) + adj] == level && dist[(blockIdx.x * n) + node] == -1){
 						dist[(blockIdx.x * n) + node] = level + 1;
@@ -196,7 +196,7 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 			
 			}
 			__syncthreads();
-			if (threadIdx.x == 0) level++;   //levelÏàµ±ÓÚbrandesÀïµÄd,ºóÃæÓÃÀ´Ã¿²½¼õ1
+			if (threadIdx.x == 0) level++;   //levelç›¸å½“äºbrandesé‡Œçš„d,åé¢ç”¨æ¥æ¯æ­¥å‡1
 			__syncthreads();
 		}
 		
@@ -204,7 +204,7 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 	
 		int dist2_cnt = 0;
 	
-		// ¾àÀëÀÛ¼Ó
+		// è·ç¦»ç´¯åŠ 
 		if (threadIdx.x == 0) {
 			for (int i = 0; i < n; i++) {
 				if (dist[(blockIdx.x * n) + i] > 0) {					
@@ -214,18 +214,18 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 				}
 		
 			}
-				results[2 * n + s] = (n-1)/dist_sum; //   ¼ÆËãclosenes
+				results[2 * n + s] = (n-1)/dist_sum; //   è®¡ç®—closenes
 		}
 		
 		
-		//µ¹Ğò¼ÆËãbetweeness
+		//å€’åºè®¡ç®—betweeness
 		while (level >0) {
 			for (int node = threadIdx.x; node < n; node += blockDim.x) {
-				if (dist[blockIdx.x * n + node] == level) {   //´Ó¾àÀë×îÔ¶µÄµã¿ªÊ¼´ÓºóÍùÇ°
+				if (dist[blockIdx.x * n + node] == level) {   //ä»è·ç¦»æœ€è¿œçš„ç‚¹å¼€å§‹ä»åå¾€å‰
 					for (int edge = rp[node]; edge < rp[node + 1]; edge++) {
 						int adj = ci[edge];
 						if (dist[(blockIdx.x * n) + adj] + 1 == dist[(blockIdx.x * n) + node]) {
-							//betweeness£¬Ô­×Ó¼Ó£¬±ÜÃâÍ¬²½²Ù×÷
+							//betweenessï¼ŒåŸå­åŠ ï¼Œé¿å…åŒæ­¥æ“ä½œ
 							atomicAdd(&delta[(blockIdx.x * n) + adj], (sigma[(blockIdx.x * n) + adj] * 1.0) / sigma[(blockIdx.x * n) + node] * (1 + delta[(blockIdx.x * n) + node]));
 						}
 					}
@@ -238,7 +238,7 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 			__syncthreads();
 		}
 
-		//Ã¿´ÎÖØÖÃÈı¸öÊı×éµÄÖµ£¬ÒÔ±ãÏÂÒ»¸ö½ÚµãÓÃ
+		//æ¯æ¬¡é‡ç½®ä¸‰ä¸ªæ•°ç»„çš„å€¼ï¼Œä»¥ä¾¿ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ç”¨
 		for (int i = 0; i < n; i++) {
 			dist[(blockIdx.x * n) + i] = -1;
 			sigma[(blockIdx.x * n) + i] = 0;
@@ -256,40 +256,40 @@ void cent_kernel(double *results,  int *dist,  double *sigma,  double *delta, in
 double* compute_centralities(int *rp, int *ci, int n, float &time_taken) {
 	printf("node_number: %d \n", n);
 	/*
-		block_count µÄÉèÖÃÆäÊµÃ»ÓĞÌØ±ğ×¼È·µÄ¹«Ê½£¬Ò»°ãÀ´Ëµ¿´ÄãµÄÈÎÎñÁ¿ÊÇ¶àÉÙ£¬±ÈÈç100000¸öµã£¬¶øÄãµÄÃ¿¸öblockÀïÃæÓĞTHREAD_COUNTÊıÁ¿Îª1024,100000/1024¾Í¿ÉÒÔ
+		block_count çš„è®¾ç½®å…¶å®æ²¡æœ‰ç‰¹åˆ«å‡†ç¡®çš„å…¬å¼ï¼Œä¸€èˆ¬æ¥è¯´çœ‹ä½ çš„ä»»åŠ¡é‡æ˜¯å¤šå°‘ï¼Œæ¯”å¦‚100000ä¸ªç‚¹ï¼Œè€Œä½ çš„æ¯ä¸ªblocké‡Œé¢æœ‰THREAD_COUNTæ•°é‡ä¸º1024,100000/1024å°±å¯ä»¥
 	*/
 
-	const int BLOCK_COUNT =512; //¾­ÑéÖµ£¬Ò»°ãÎª128 »ò 256
+	const int BLOCK_COUNT =512; //ç»éªŒå€¼ï¼Œä¸€èˆ¬ä¸º128 æˆ– 256
 
-	printf("block_count ÓĞ¿éÊıÎª:%d \n", BLOCK_COUNT);
+	printf("block_count æœ‰å—æ•°ä¸º:%d \n", BLOCK_COUNT);
 	double *sigma;
 	int  *dist;
 	double *delta;
 	double *d_results;
 
-	cudaMalloc((void **)&d_results, sizeof(double) * n * 4); //4ÀàÖĞĞÄĞÔ£¬n¸ö½Úµã
-	cudaMalloc((void **)&sigma, sizeof(double  ) * n * BLOCK_COUNT);  //*BLOCK_COUNT,Ã¿¸öblockÖĞµ¥¶ÀÔËĞĞ
+	cudaMalloc((void **)&d_results, sizeof(double) * n * 4); //4ç±»ä¸­å¿ƒæ€§ï¼Œnä¸ªèŠ‚ç‚¹
+	cudaMalloc((void **)&sigma, sizeof(double  ) * n * BLOCK_COUNT);  //*BLOCK_COUNT,æ¯ä¸ªblockä¸­å•ç‹¬è¿è¡Œ
 	cudaMalloc((void **)&dist, sizeof( int) * n * BLOCK_COUNT); //
 	cudaMalloc((void **)&delta, sizeof(double) * n * BLOCK_COUNT);
 
-	cudaMemset(dist, -1, sizeof( int) * n * BLOCK_COUNT);//³õÊ¼»¯
+	cudaMemset(dist, -1, sizeof( int) * n * BLOCK_COUNT);//åˆå§‹åŒ–
 	cudaMemset(sigma, 0, sizeof(double ) * n * BLOCK_COUNT);
 	cudaMemset(delta, 0, sizeof(double) * n * BLOCK_COUNT);
 	cudaMemset(d_results, 0, sizeof(double) * 4 * n);
 
-	cudaEvent_t start, end; //¼ÇÂ¼ÊÂ¼ş
+	cudaEvent_t start, end; //è®°å½•äº‹ä»¶
 	cudaEventCreate(&start);
 	cudaEventCreate(&end);
 	cudaEventRecord(start);
 
    cent_kernel << <BLOCK_COUNT, THREAD_COUNT >> > (d_results, dist, sigma, delta, rp, ci, n);
 	//cent_kernel_seq << <BLOCK_COUNT, THREAD_COUNT >> > (d_results, dist, sigma, delta, rp, ci, n);
-	cudaDeviceSynchronize(); //ÏÈÍ¬²½£¬ÔÙÊ±¼ä²âÁ¿
+	cudaDeviceSynchronize(); //å…ˆåŒæ­¥ï¼Œå†æ—¶é—´æµ‹é‡
 
 	cudaEventRecord(end);
-	cudaEventSynchronize(end);//ÏÈÍ¬²½£¬ÔÙÊ±¼ä²âÁ¿
+	cudaEventSynchronize(end);//å…ˆåŒæ­¥ï¼Œå†æ—¶é—´æµ‹é‡
 
-	cudaEventElapsedTime(&time_taken, start, end);//¼ÇÂ¼gpuÊ±¼ä
+	cudaEventElapsedTime(&time_taken, start, end);//è®°å½•gpuæ—¶é—´
 
 
 	double *results;
@@ -303,24 +303,24 @@ double* compute_centralities(int *rp, int *ci, int n, float &time_taken) {
 	cudaFree(d_results);
 
 
-	cudaDeviceSynchronize();//ËùÓĞ¶«Î÷¶¼Í¬²½£¬ÔÚ·µ»ØÖµ
+	cudaDeviceSynchronize();//æ‰€æœ‰ä¸œè¥¿éƒ½åŒæ­¥ï¼Œåœ¨è¿”å›å€¼
 	return results;
 }
 
 
 int main()
 {
-	//CUDA ³õÊ¼»¯£¬²é¿´GPU¸÷ÏîÅäÖÃ
+	//CUDA åˆå§‹åŒ–ï¼ŒæŸ¥çœ‹GPUå„é¡¹é…ç½®
 	if (!InitCUDA()) {
 		return 0;
 	}
 
 	/*
-	Êı¾İ¸ñÊ½¼ì²é£º1.Êı¾İÊÇ·ñ´æÔÚ¹ÂÁ¢µã£¬ÈçÓĞÏÈ½øĞĞ´¦Àí 2.Êı¾İµÄµÚÒ»ĞĞÊÇ·ñ·ûºÏÊäÈë node_num>>node_num>>edge_num
-	ÔËĞĞÇ°¼ì²é£º£¨1£©¶ÁÈëÎÄ¼şÃûÌæ»»  £¨2£© Ğ´ÈëÎÄ¼şÃûÌæ»»
+	æ•°æ®æ ¼å¼æ£€æŸ¥ï¼š1.æ•°æ®æ˜¯å¦å­˜åœ¨å­¤ç«‹ç‚¹ï¼Œå¦‚æœ‰å…ˆè¿›è¡Œå¤„ç† 2.æ•°æ®çš„ç¬¬ä¸€è¡Œæ˜¯å¦ç¬¦åˆè¾“å…¥ node_num>>node_num>>edge_num
+	è¿è¡Œå‰æ£€æŸ¥ï¼šï¼ˆ1ï¼‰è¯»å…¥æ–‡ä»¶åæ›¿æ¢  ï¼ˆ2ï¼‰ å†™å…¥æ–‡ä»¶åæ›¿æ¢
 	*/
 	
-	std::string filename = "D:/ÒóË¼Ô´/data/musae_facebook_edges-22470-171002.txt";
+	std::string filename = "";
 	int *row_ptr, *col_ind;
 	int num_nodes, num_edges;
 	read_graph(filename, row_ptr, col_ind, num_nodes, num_edges);
@@ -341,21 +341,21 @@ int main()
 
 	printf("CUDA memory parameters are allocated for kernel function.\n");
 
-	//SCR´æ´¢½á¹¹-->´ÓhostÉè±¸¸´ÖÆµ½deviceÉè±¸ÉÏ
+	//SCRå­˜å‚¨ç»“æ„-->ä»hostè®¾å¤‡å¤åˆ¶åˆ°deviceè®¾å¤‡ä¸Š
 	cudaMemcpy(rp, row_ptr, sizeof(int) * (num_nodes + 1), cudaMemcpyHostToDevice);
 	cudaMemcpy(ci, col_ind, sizeof(int) * (num_edges * 2), cudaMemcpyHostToDevice);
 	printf("CUDA memory parameters are set for kernel function.\n");
 
 	double *results = compute_centralities(rp, ci, num_nodes, time_taken);
 
-	printf("Kernel function is finished.ºËº¯ÊıÖ´ĞĞÍê³É¡£\n");
+	printf("Kernel function is finished.æ ¸å‡½æ•°æ‰§è¡Œå®Œæˆã€‚\n");
 
 	printf("Centrality Results:\n");
 	printf("------------------------------------------------------------------------\n");
 	ofstream write;
-	write.open("D:\\ÒóË¼Ô´\\result\\BC\\com-amazon\\com-amazon.ungraph-334863-bc-v2.txt");
+	write.open("D:\\æ®·æ€æº\\result\\BC\\com-amazon\\com-amazon.ungraph-334863-bc-v2.txt");
 	ofstream write1;
-	write1.open("D:\\ÒóË¼Ô´\\result\\CC\\com-amazon\\com-amazon.ungraph-334863-cc-v2.txt");
+	write1.open("D:\\æ®·æ€æº\\result\\CC\\com-amazon\\com-amazon.ungraph-334863-cc-v2.txt");
 	//double nom = (num_nodes - 1)*(num_nodes - 2);
 	for (int i = 0; i < num_nodes; i++)
 	{

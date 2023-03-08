@@ -5,7 +5,7 @@
 #include<fstream>
 using namespace GraphRead_PageRank;
 
-//-------ÏÔÊ¾¸÷½ÚµãµÄÁÚ½ÓµãĞÅÏ¢
+//-------æ˜¾ç¤ºå„èŠ‚ç‚¹çš„é‚»æ¥ç‚¹ä¿¡æ¯
 
 void Display_nodeInfo(Node *nodes,int *edges_list,int node_count) {
 
@@ -21,7 +21,7 @@ void Display_nodeInfo(Node *nodes,int *edges_list,int node_count) {
 void Out_To_File(Node *nodes, int *edges_list, int node_count, double *res) {
 
 	ofstream file;
-	file.open("D:\\ÒóË¼Ô´\\result\\PC\\com-amazon.ungraph-334863-pc-v2.txt");
+	file.open("D:\\æ®·æ€æº\\result\\PC\\com-amazon.ungraph-334863-pc-v2.txt");
 	for (int i = 0; i < node_count; i++) {
 		file << fixed<< setprecision(9) <<res[i] << endl;
 	}
@@ -57,13 +57,13 @@ void Run_pagerank( Node *nodes, double *Rank_Value, int * edges_list) {
 
 
 int main() {
-	string File_Path = "D:\\ÒóË¼Ô´\\data\\com-amazon.ungraph-334863.txt";
+	string File_Path = "";
 	
 	GraphReader::read_graph_PageRank(File_Path);
-	Node *nodes; //´æ´¢Ã¿¸ö½Úµã
-	double *Rank_Value;//´æ´¢Ã¿¸ö½ÚµãRankÖµ
+	Node *nodes; //å­˜å‚¨æ¯ä¸ªèŠ‚ç‚¹
+	double *Rank_Value;//å­˜å‚¨æ¯ä¸ªèŠ‚ç‚¹Rankå€¼
 	int *edges_list; //
-	int dangling_nodes_count; // ÎŞÁÚ½Óµã¼ÇÂ¼
+	int dangling_nodes_count; // æ— é‚»æ¥ç‚¹è®°å½•
 	int Node_count = GraphReader::Init_pages(nodes, Rank_Value, edges_list, dangling_nodes_count);
 	cout << Node_count << endl;
 	cout << GraphReader::edges_count << endl;
